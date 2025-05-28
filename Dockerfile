@@ -10,7 +10,7 @@ ENV HF_HUB_ENABLE_HF_TRANSFER=0
 ADD download_models.py /Wan2GP
 RUN cd /Wan2GP && python download_models.py
 
-ADD test_generate_video.py /Wan2GP
+#ADD test_generate_video.py /Wan2GP
 ADD image.webp /Wan2GP
 
 RUN python3 -m pip install runpod~=1.7.9
