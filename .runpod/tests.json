@@ -3,7 +3,7 @@
     {
       "name": "basic_test",
       "input": {
-        "name": "John Doe"
+        "prompt": "TEST"
       },
       "timeout": 10000
     }
