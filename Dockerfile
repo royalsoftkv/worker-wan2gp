@@ -1,6 +1,6 @@
 FROM runpod/base:0.6.3-cuda12.4.1
 
-RUN apt update -y && apt install python-is-python3
+RUN apt update -y && apt install python-is-python3 git -y
 
 RUN python3 -m pip install torch==2.6.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/test/cu124
 RUN git clone https://github.com/deepbeepmeep/Wan2GP.git
