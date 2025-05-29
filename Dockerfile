@@ -17,3 +17,4 @@ ADD test_input.json /Wan2GP
 RUN sed -i "s|file_name = f\"{time_flag}_seed{seed}_{sanitize_file_name(save_prompt\\[:100\\]).strip()}.mp4\"|file_name = f\"{task['id']}.mp4\"|g" Wan2GP/wgp.py
 
 CMD cd /Wan2GP && python -u handler.py
+#CMD bash

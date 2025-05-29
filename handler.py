@@ -24,13 +24,35 @@ def handler(job):
     prompt = job_input.get("prompt", "")
     base64_str = job_input.get("image", "")
     resolution = job_input.get("resolution", "832x1104")
-    video_length = job_input.get("video_length", "33")
+    video_length = job_input.get("video_length", 33)
     num_inference_steps = job_input.get("num_inference_steps", 30)
     guidance_scale = job_input.get("guidance_scale", 5)
     flow_shift = job_input.get("flow_shift", 5)
 
-    image_data = base64.b64decode(base64_str)
-    image = Image.open(BytesIO(image_data))
+    try:
+        if base64_str.startswith("data:image"):
+            # Strip data URL prefix if present
+            base64_str = base64_str.split(",", 1)[1]
+
+        if not base64_str:
+            raise ValueError("No image data provided.")
+
+        image_data = base64.b64decode(base64_str)
+        size_in_bytes = len(image_data)
+        print(image_data[:10])
+        print(f"Received image size: {size_in_bytes} bytes")
+        image = Image.open(BytesIO(image_data))
+        image.verify()  # Optional: verifies if image is broken
+        image = Image.open(BytesIO(image_data))  # reopen after verify
+
+    except Exception as e:
+        return {
+            "error": "Invalid base64 image data",
+            "details": str(e)
+        }
+
+    if prompt== "TEST":
+        return f"Received, {prompt}!"
 
     task = {
         "id": job_id
@@ -84,6 +106,7 @@ def handler(job):
             "advanced": False,
             "gen": {
                 "file_list": [],
+                "file_settings_list": [],
                 "prompt_no" : 1
             },
             "loras": [],
