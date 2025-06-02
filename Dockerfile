@@ -13,6 +13,7 @@ RUN cd /Wan2GP && python download_models.py
 RUN python3 -m pip install runpod~=1.7.9
 ADD handler.py /Wan2GP
 ADD test_input.json /Wan2GP
+ADD wgp_config.json /Wan2GP
 
 RUN sed -i "s|file_name = f\"{time_flag}_seed{seed}_{sanitize_file_name(save_prompt\\[:100\\]).strip()}.mp4\"|file_name = f\"{task['id']}.mp4\"|g" Wan2GP/wgp.py
 
