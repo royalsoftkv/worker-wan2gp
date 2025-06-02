@@ -22,6 +22,7 @@ def handler(job):
     job_id = job["id"]
 
     prompt = job_input.get("prompt", "")
+    negative_prompt = job_input.get("negative_prompt", "")
     base64_str = job_input.get("image", "")
     resolution = job_input.get("resolution", "832x1104")
     video_length = job_input.get("video_length", 33)
@@ -59,7 +60,7 @@ def handler(job):
     }
     params = {
         "prompt": prompt,
-        "negative_prompt": "",
+        "negative_prompt": negative_prompt,
         "resolution": resolution,
         "video_length": video_length,
         "seed": -1,
