@@ -11,6 +11,6 @@
   "clear_file_list": 5,
   "vae_config": 0,
   "profile": 1,
-  "preload_model_policy": [],
+  "preload_model_policy": ["P"],
   "UI_theme": "default"
 }
