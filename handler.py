@@ -19,7 +19,8 @@ def dummy_send_cmd(event, payload=None):
 
 
 def handle_image(job):
-    """Image generation via RealVisXL (same as run2.py + realvis.py)."""
+    """Image generation via RealVisXL; pipeline loaded once and reused."""
+    import realvis
     job_input = job.get("input", {})
 
     params = {
@@ -33,13 +34,8 @@ def handle_image(job):
         "seed": job_input.get("seed") or random.randint(0, 2**32 - 1),
     }
 
-    event = {"input": {"params": params}}
-    output = {}
-    exec_globals = {"__builtins__": __builtins__, "event": event, "output": output}
-
     try:
-        with open("/Wan2GP/realvis.py", "r", encoding="utf-8") as f:
-            exec(f.read(), exec_globals)
+        output = realvis.generate(params)
     except Exception as e:
         return {
             "error": "Image generation failed",
@@ -48,10 +44,9 @@ def handle_image(job):
         }
 
     if "error" in output:
-        err = output["error"]
         return {
-            "error": err if isinstance(err, str) else err.get("error", str(err)),
-            "details": err.get("details", "") if isinstance(err, dict) else "",
+            "error": output["error"],
+            "details": output.get("details", ""),
         }
 
     return {
