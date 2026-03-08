@@ -176,22 +176,25 @@ def handle_video(job):
 
 def handler(job):
     """Route to image or video generation based on input (same as docker /start)."""
+    job_id = job.get("id", "?")
+    print(f"[handler] START job_id={job_id}", flush=True)
     job_input = job.get("input", {})
 
     # Video: has base64 image. Image: has prompt only.
     if job_input.get("image"):
-        return handle_video(job)
+        out = handle_video(job)
     else:
-        return handle_image(job)
+        out = handle_image(job)
+    print(f"[handler] DONE job_id={job_id} has_error={isinstance(out, dict) and 'error' in out}", flush=True)
+    return out
 
 
 def main():
-    # Local test: run with test_input.json (image) or test_input_video.json (video) when not in RunPod
+    # Local test only when not on RunPod (test_input.json exists in image; wrong condition caused test to run on RunPod and repeat)
+    on_runpod = bool(os.environ.get("RUNPOD_POD_ID") or os.environ.get("RUNPOD_WEBHOOK_GET_JOB"))
     use_video = os.environ.get("USE_VIDEO_TEST", "")
     test_file = "test_input_video.json" if (use_video and os.path.exists("test_input_video.json")) else "test_input.json"
-    if os.path.exists(test_file) and (
-        os.environ.get("LOCAL_TEST") or not os.environ.get("RUNPOD_SERVERLESS")
-    ):
+    if os.path.exists(test_file) and (os.environ.get("LOCAL_TEST") or not on_runpod):
         import json
         with open(test_file, "r", encoding="utf-8") as f:
             job = json.load(f)
@@ -227,6 +230,10 @@ def main():
         else:
             print(json.dumps(result, indent=2))
     else:
+        # Preload RealVis once at worker startup so first job doesn't trigger load
+        if on_runpod:
+            import realvis
+            realvis._load_pipeline("DPM++ 2M Karras")
         runpod.serverless.start({"handler": handler})
 
 

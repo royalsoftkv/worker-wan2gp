@@ -19,6 +19,8 @@ RUN python3 -m pip install sageattention==1.0.6 peft===0.17.0
 RUN python3 -m pip install diffusers transformers accelerate runpod~=1.7.9
 
 ENV HF_HUB_ENABLE_HF_TRANSFER=0
+ENV HF_HUB_DISABLE_PROGRESS_BARS=1
+ENV DISABLE_TQDM=1
 # Hugging Face cache – all libs use this; mount a host dir to persist (e.g. -v ./models/hf_cache:/data/hf_cache)
 ENV HF_HOME=/data/hf_cache
 ENV HF_HUB_CACHE=/data/hf_cache/hub

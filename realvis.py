@@ -1,11 +1,17 @@
 # RealVisXL image generation - load pipeline once, reuse for all jobs
 
+import os
+# Disable HuggingFace/diffusers progress bars so logs don't repeat "Fetching/Loading" every time
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+os.environ["DISABLE_TQDM"] = "1"
+
 from diffusers.models import AutoencoderKL
 from diffusers import AutoPipelineForText2Image, DPMSolverMultistepScheduler
 import torch
 import base64
 import io
 import time
+import threading
 import numpy as np
 from diffusers import (
     DDIMScheduler,
@@ -30,6 +36,7 @@ def _patch_dpm_scheduler():
 _patch_dpm_scheduler()
 
 _pipe = None
+_load_lock = threading.Lock()
 MODEL_NAME = "SG161222/RealVisXL_V5.0"
 
 
@@ -46,27 +53,30 @@ def get_scheduler(scheduler_config: Dict, name: str):
 
 
 def _load_pipeline(sampler: str):
-    """Load pipeline once and cache in _pipe."""
+    """Load pipeline once and cache in _pipe. Thread-safe."""
     global _pipe
     if _pipe is not None:
         return _pipe
-    print("Start realvis (loading model once)")
-    vae = AutoencoderKL.from_pretrained(
-        "madebyollin/sdxl-vae-fp16-fix",
-        torch_dtype=torch.float16,
-    )
-    _pipe = AutoPipelineForText2Image.from_pretrained(
-        MODEL_NAME,
-        vae=vae,
-        use_safetensors=True,
-        add_watermarker=False,
-        torch_dtype=torch.float16,
-        variant="fp16",
-        custom_pipeline="lpw_stable_diffusion_xl",
-    )
-    _pipe.scheduler = get_scheduler(_pipe.scheduler.config, sampler)
-    _pipe.to("cuda")
-    print("RealVisXL pipeline loaded")
+    with _load_lock:
+        if _pipe is not None:
+            return _pipe
+        print("Start realvis (loading model once)")
+        vae = AutoencoderKL.from_pretrained(
+            "madebyollin/sdxl-vae-fp16-fix",
+            torch_dtype=torch.float16,
+        )
+        _pipe = AutoPipelineForText2Image.from_pretrained(
+            MODEL_NAME,
+            vae=vae,
+            use_safetensors=True,
+            add_watermarker=False,
+            torch_dtype=torch.float16,
+            variant="fp16",
+            custom_pipeline="lpw_stable_diffusion_xl",
+        )
+        _pipe.scheduler = get_scheduler(_pipe.scheduler.config, sampler)
+        _pipe.to("cuda")
+        print("RealVisXL pipeline loaded")
     return _pipe
 
 
