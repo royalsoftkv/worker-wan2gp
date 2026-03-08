@@ -1,59 +1,43 @@
-# Large model files and volume mounts
+# Model files
 
-These paths hold large downloaded models. Mount them from the host so data lives outside the container and is reused across runs.
+Two options: **baked into the image** (no setup) or **RunPod network volume** (persistent, shared, faster cold starts).
 
-## 1. Wan2GP video models – `/Wan2GP/ckpts/`
+## Option A: Baked into image (default)
 
-**Source:** `download_models.py` (Hugging Face: DeepBeepMeep/Wan2.1, DeepBeepMeep/LTX_Video)
+Models are downloaded **during `docker build`** and stored in the image (~45 GB). No volumes required.
 
-| Path / pattern | Description | Approx. size |
-|----------------|-------------|--------------|
-| `ckpts/ltxv_0.9.7_13B_*.safetensors` | Video transformer weights | ~25 GB each (2 variants) |
-| `ckpts/T5_xxl_1.1/` | T5 text encoder | ~5 GB |
-| `ckpts/ltxv_0.9.7_VAE.safetensors` | VAE | ~1 GB |
-| `ckpts/ltxv_0.9.7_spatial_upscaler.safetensors` | Upscaler | ~1 GB |
-| `ckpts/pose/`, `ckpts/depth/`, `ckpts/mask/`, `ckpts/wav2vec/` | Control / aux models | 100s MB–1 GB |
-| `ckpts/flownet.pkl` | Flow net | ~100 MB |
+| Path in image | Contents | Size |
+|---------------|----------|------|
+| `/models/hf_cache` | RealVisXL, SDXL VAE | ~7 GB |
+| `/Wan2GP/ckpts/` | Wan2GP video models | ~35 GB |
 
-**Total (one transformer variant):** ~35–40 GB.
-
-**Host mount example:**
 ```bash
--v /path/on/host/ckpts:/Wan2GP/ckpts
+docker build -t worker-runpod .
 ```
 
----
+## Option B: RunPod network volume (recommended for Serverless)
 
-## 2. Hugging Face cache (RealVisXL, VAE, CLIP) – `/data/hf_cache`
+RunPod [network volumes](https://docs.runpod.io/storage/network-volumes) mount at **`/runpod-volume`** on Serverless workers. When present, the worker uses them for models so the first worker downloads once and all others reuse the same data.
 
-**Source:** `diffusers` and `transformers` (RealVisXL, SDXL VAE, CLIP for image generation and NSFW check)
+1. In RunPod console: **Storage → Create Network Volume** (e.g. 50 GB), same datacenter as your endpoint.
+2. **Serverless → your endpoint → Edit → Advanced → Network Volumes** → attach the volume.
+3. (Optional) Pre-populate via [S3-compatible API](https://docs.runpod.io/storage/s3-api) to avoid any download on first run.
 
-- `SG161222/RealVisXL_V5.0` – ~6 GB  
-- `madebyollin/sdxl-vae-fp16-fix` – ~300 MB  
-- `openai/clip-vit-base-patch16` – ~600 MB  
+The entrypoint uses:
 
-**Total:** ~7 GB.
+- `/runpod-volume/hf_cache` — RealVisXL / Hugging Face cache  
+- `/runpod-volume/ckpts` — Wan2GP checkpoints (symlinked from `/Wan2GP/ckpts`)
 
-The image sets `HF_HOME=/data/hf_cache`, so all Hugging Face downloads go there.
+If the volume is empty, the first worker runs `download_models.py` and RealVis will download on first image job; later workers use the same data.
 
-**Host mount example:**
-```bash
--v /path/on/host/hf_cache:/data/hf_cache
-```
-
----
-
-## Example: run with external model directories
+## Local runs with host mounts
 
 ```bash
-# Create host dirs once
 mkdir -p ./models/ckpts ./models/hf_cache
-
-# Run with volumes (first run will download into these dirs)
 docker run --rm --gpus all \
   -v "$(pwd)/models/ckpts:/Wan2GP/ckpts" \
-  -v "$(pwd)/models/hf_cache:/data/hf_cache" \
+  -v "$(pwd)/models/hf_cache:/models/hf_cache" \
   worker-runpod
 ```
 
-For RunPod Serverless, configure the endpoint’s **Volume** to mount the same paths so all workers use the same model data.
+Empty mounts trigger downloads on first run.

@@ -22,34 +22,23 @@ python handler.py
 
 This runs one job using `test_input.json` as input and prints the result. For RunPod deployment, the container sets `RUNPOD_SERVERLESS`, so the worker starts normally instead of running the test payload.
 
-## Large model files (volume mounts)
+## Model files
 
-The image does **not** bake in the large model downloads. Two paths should be mounted from the host so models are stored outside the container and reused:
+- **Default:** Models are baked into the image during build (~45 GB). No volumes needed.
+- **RunPod (recommended):** Attach a [network volume](https://docs.runpod.io/storage/network-volumes); it mounts at `/runpod-volume`. The worker uses it for models so the first worker downloads once and rest reuse. See [MODELS.md](MODELS.md).
 
-| Container path       | Contents                    | See |
-|----------------------|-----------------------------|-----|
-| `/Wan2GP/ckpts`      | Wan2GP video models (~35 GB) | [MODELS.md](MODELS.md) |
-| `/data/hf_cache`     | RealVisXL, VAE, CLIP (~7 GB) | [MODELS.md](MODELS.md) |
-
-**Example – run with host directories and fixed container name (for `docker logs worker-runpod`):**
+**Run locally:**
 ```bash
-mkdir -p ./models/ckpts ./models/hf_cache ./output
-docker rm -f worker-runpod 2>/dev/null || true
-docker run --name worker-runpod --gpus all \
-  -v "$(pwd)/models/ckpts:/Wan2GP/ckpts" \
-  -v "$(pwd)/models/hf_cache:/data/hf_cache" \
+docker run --name worker-runpod --rm --gpus all \
   -v "$(pwd)/output:/Wan2GP/output" \
   worker-runpod
 ```
-Test output is written to `./output/test_output.png` or `./output/test_output.mp4`. To re-run, remove the container first: `docker rm -f worker-runpod`.
-
-On RunPod Serverless, attach a **Volume** to the endpoint and mount the same paths so all workers share the same model data.
 
 ## Deploy to RunPod
 
-1. Push image to a container registry (Docker Hub, GHCR, etc.)
-2. Create RunPod Serverless endpoint and attach a volume for `ckpts` and `hf_cache` (see [MODELS.md](MODELS.md)).
-3. Point to your image
+1. Push image to a container registry.
+2. Create a Serverless endpoint and point it to your image.
+3. (Optional) Create a network volume, attach it to the endpoint — workers will use it for models at `/runpod-volume`.
 
 ## Input format
 
@@ -97,8 +86,6 @@ On RunPod Serverless, attach a **Volume** to the endpoint and mount the same pat
    ```bash
    docker rm -f worker-runpod 2>/dev/null || true
    docker run --name worker-runpod --gpus all \
-     -v "$(pwd)/models/ckpts:/Wan2GP/ckpts" \
-     -v "$(pwd)/models/hf_cache:/data/hf_cache" \
      -v "$(pwd)/output:/Wan2GP/output" \
      -v "$(pwd)/test_input_video.json:/Wan2GP/test_input_video.json" \
      -e USE_VIDEO_TEST=1 \

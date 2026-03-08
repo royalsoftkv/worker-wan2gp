@@ -1,12 +1,12 @@
 # RunPod serverless worker - image (RealVisXL) + video (Wan2GP) generation
+# Models are baked into the image so RunPod can recreate containers without re-downloading.
 # docker build -t worker-runpod .
-# Deploy to RunPod Serverless
 
 FROM runpod/base:0.6.3-cuda12.4.1
 
 RUN apt update -y && apt install python-is-python3 git -y
 
-# PyTorch (stable cu124 index; test index had missing nvidia-cudnn-cu12==9.1.0.70)
+# PyTorch (stable cu124 index)
 RUN python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 # Wan2GP
@@ -21,13 +21,19 @@ RUN python3 -m pip install diffusers transformers accelerate runpod~=1.7.9
 ENV HF_HUB_ENABLE_HF_TRANSFER=0
 ENV HF_HUB_DISABLE_PROGRESS_BARS=1
 ENV DISABLE_TQDM=1
-# Hugging Face cache – all libs use this; mount a host dir to persist (e.g. -v ./models/hf_cache:/data/hf_cache)
-ENV HF_HOME=/data/hf_cache
-ENV HF_HUB_CACHE=/data/hf_cache/hub
-ENV TRANSFORMERS_CACHE=/data/hf_cache/transformers
+# Hugging Face cache – baked into image (no external volume needed on RunPod)
+ENV HF_HOME=/models/hf_cache
+ENV HF_HUB_CACHE=/models/hf_cache/hub
+ENV TRANSFORMERS_CACHE=/models/hf_cache/transformers
 
-# Video models go to /Wan2GP/ckpts (mount a host dir; entrypoint downloads if empty)
+# Bake RealVisXL + VAE into image (download at build time)
+ADD bake_realvis.py /Wan2GP/
+RUN mkdir -p /models/hf_cache && python3 /Wan2GP/bake_realvis.py
+
+# Bake Wan2GP ckpts into image (~35 GB; long build)
 ADD download_models.py /Wan2GP/
+RUN cd /Wan2GP && python3 download_models.py
+
 ADD entrypoint.sh /Wan2GP/
 RUN chmod +x /Wan2GP/entrypoint.sh
 
