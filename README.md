@@ -105,3 +105,4 @@ On RunPod Serverless, attach a **Volume** to the endpoint and mount the same pat
      worker-runpod
    ```
    Output video is written to `./output/test_output.mp4`.
+
