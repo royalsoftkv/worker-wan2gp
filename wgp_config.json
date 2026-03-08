@@ -1,0 +1,23 @@
+{
+  "attention_mode": "auto",
+  "transformer_types": [
+    "ltxv_13B_distilled"
+  ],
+  "text_encoder_quantization": "int8",
+  "save_path": "outputs",
+  "compile": "",
+  "profile": 4,
+  "vae_config": 1,
+  "vae_precision": "16",
+  "mixed_precision": "0",
+  "metadata_type": "metadata",
+  "transformer_quantization": "int8",
+  "transformer_dtype_policy": "fp16",
+  "boost": 1,
+  "clear_file_list": 5,
+  "preload_model_policy": ["P"],
+  "UI_theme": "default",
+  "fit_canvas": 0,
+  "enhancer_enabled": 0,
+  "preload_in_VRAM": 0
+}

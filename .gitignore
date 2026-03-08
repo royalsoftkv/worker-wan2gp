@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.idea/
+*.log
+# Local model cache and generated output (use volume mounts in prod)
+models/
+output/
+# Generated video test payload (large base64)
+test_input_video.json

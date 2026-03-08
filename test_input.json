@@ -1,0 +1,12 @@
+{
+  "id": "local-test",
+  "input": {
+    "prompt": "photo of young woman, smiling",
+    "negative_prompt": "",
+    "width": 512,
+    "height": 512,
+    "num_inference_steps": 11,
+    "guidance_scale": 7,
+    "sampler": "DPM++ 2M Karras"
+  }
+}
