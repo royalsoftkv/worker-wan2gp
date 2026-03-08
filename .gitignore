@@ -8,3 +8,5 @@ models/
 output/
 # Generated video test payload (large base64)
 test_input_video.json
+# Test page (local config / secrets)
+test-runpod/index.php

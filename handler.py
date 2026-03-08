@@ -9,9 +9,6 @@ import os
 import traceback
 import random
 
-# Video generation
-from wgp import generate_video
-
 
 def dummy_send_cmd(event, payload=None):
     if event != "preview":
@@ -64,7 +61,8 @@ def handle_image(job):
 
 
 def handle_video(job):
-    """Video generation via Wan2GP (same as video.py)."""
+    """Video generation via Wan2GP (same as video.py). Load wgp only for video jobs."""
+    from wgp import generate_video
     job_input = job["input"]
     job_id = job.get("id", "local-test")
 
